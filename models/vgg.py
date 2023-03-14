@@ -89,3 +89,10 @@ if __name__ == '__main__':
             input_names=['input'], 
             output_names=['output'])
     
+    onnx_model = onnx.load("vgg.onnx") 
+    try: 
+        onnx.checker.check_model(onnx_model) 
+    except Exception: 
+        print("Model incorrect") 
+    else: 
+        print("Model correct")
