@@ -76,15 +76,16 @@ def vgg19_bn():
 
 if __name__ == '__main__':
     weights = '/home/sekiro/pytorch-cifar100/checkpoint/vgg16/Monday_13_March_2023_23h_26m_48s/vgg16-50-regular.pth'
-    model = vgg11_bn()
-    model.load_state_dict(torch.load(args.weights))
-    dummy_input = torch.randn(1, 3, 224, 224) 
+    model = vgg16_bn()
+    model.load_state_dict(torch.load(weights))
+    dummy_input = torch.randn(1, 3, 32, 32) 
+    model(dummy_input)
     with torch.no_grad(): 
-    torch.onnx.export( 
-        model, 
-        x, 
-        "vgg.onnx", 
-        opset_version=15, 
-        input_names=['input'], 
-        output_names=['output'])
+        torch.onnx.export( 
+            model, 
+            dummy_input, 
+            "vgg.onnx", 
+            opset_version=11, 
+            input_names=['input'], 
+            output_names=['output'])
     
