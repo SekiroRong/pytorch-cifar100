@@ -12,6 +12,8 @@ import torch
 import torch.nn as nn
 import torch.onnx 
 import onnx 
+import onnxruntime
+import numpy as np
 
 cfg = {
     'A' : [64,     'M', 128,      'M', 256, 256,           'M', 512, 512,           'M', 512, 512,           'M'],
@@ -76,19 +78,19 @@ def vgg19_bn():
 
 
 if __name__ == '__main__':
-    weights = '/home/sekiro/pytorch-cifar100/checkpoint/vgg16/Monday_13_March_2023_23h_26m_48s/vgg16-50-regular.pth'
+    weights = '/home/sekiro/pytorch-cifar100/checkpoint/vgg16/Tuesday_14_March_2023_19h_04m_37s/vgg16-20-regular.pth'
     model = vgg16_bn()
     model.load_state_dict(torch.load(weights))
     dummy_input = torch.randn(1, 3, 32, 32) 
     model(dummy_input)
-    with torch.no_grad(): 
-        torch.onnx.export( 
-            model, 
-            dummy_input, 
-            "vgg.onnx", 
-            opset_version=11, 
-            input_names=['input'], 
-            output_names=['output'])
+    # with torch.no_grad(): 
+    #     torch.onnx.export( 
+    #         model, 
+    #         dummy_input, 
+    #         "vgg.onnx", 
+    #         opset_version=11, 
+    #         input_names=['input'], 
+    #         output_names=['output'])
     
     onnx_model = onnx.load("vgg.onnx") 
     try: 
@@ -97,3 +99,9 @@ if __name__ == '__main__':
         print("Model incorrect") 
     else: 
         print("Model correct")
+
+    dummy_input_np = np.random.rand(1, 3, 32, 32).astype(np.float32)
+    ort_session = onnxruntime.InferenceSession("vgg.onnx")
+    ort_inputs = {'input': dummy_input_np}
+    ort_output = ort_session.run(['output'], ort_inputs)[0]
+    print(ort_output)
