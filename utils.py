@@ -19,7 +19,6 @@ from torch.utils.data import DataLoader
 def get_network(args):
     """ return given network
     """
-
     if args.net == 'vgg16':
         from models.vgg import vgg16_bn
         net = vgg16_bn()
