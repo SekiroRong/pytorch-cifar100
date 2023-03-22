@@ -91,8 +91,8 @@ class FocalBlock(nn.Module):
     def __init__(self, in_channels, out_channels, stride=1):
         super().__init__()
 
-        self.conv1 =  nn.Conv2d(in_channels, in_channels, kernel_size=7, stride=1, padding=7, bias=False)
-        self.conv2 =  nn.Conv2d(in_channels, in_channels, kernel_size=7, stride=1, dilation=7, padding=7, bias=False)
+        self.conv1 =  nn.Conv2d(in_channels, in_channels, kernel_size=7, stride=1, padding=7, group=in_channels, bias=False)
+        self.conv2 =  nn.Conv2d(in_channels, in_channels, kernel_size=7, stride=1, dilation=7, padding=7, group=in_channels, bias=False)
         self.conv3 =  nn.Conv2d(in_channels, 4*in_channels, kernel_size=1, stride=1, bias=False)
         self.conv3 =  nn.Conv2d(4*in_channels, in_channels, kernel_size=1, stride=1, bias=False)
 
@@ -110,7 +110,7 @@ class FocalBlock(nn.Module):
         out = out + nn.ReLU(inplace=True)(nn.BatchNorm2d(self.conv2(out)))
         out = nn.ReLU(inplace=True)(self.conv3(out))
         out = self.conv4(out)
-        out = x + out
+        out = self.shortcut(x) + out
 
 
         return out
