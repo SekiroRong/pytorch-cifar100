@@ -77,6 +77,61 @@ class BottleNeck(nn.Module):
     def forward(self, x):
         return nn.ReLU(inplace=True)(self.residual_function(x) + self.shortcut(x))
 
+class FocalBlock(nn.Module):
+    """FocalBlock
+
+    """
+
+    #BasicBlock and BottleNeck block
+    #have different output size
+    #we use class attribute expansion
+    #to distinct
+    expansion = 1
+
+    def __init__(self, in_channels, out_channels, stride=1):
+        super().__init__()
+
+        self.conv1 =  nn.Conv2d(in_channels, in_channels, kernel_size=7, stride=1, padding=7, bias=False)
+        self.conv2 =  nn.Conv2d(in_channels, in_channels, kernel_size=7, stride=1, dilation=7, padding=7, bias=False)
+        self.conv3 =  nn.Conv2d(in_channels, 4*in_channels, kernel_size=1, stride=1, bias=False)
+        self.conv3 =  nn.Conv2d(4*in_channels, in_channels, kernel_size=1, stride=1, bias=False)
+
+    def forward(self, x):
+        out = x + nn.ReLU(inplace=True)(nn.BatchNorm2d(self.conv1(x)))
+        out = out + nn.ReLU(inplace=True)(nn.BatchNorm2d(self.conv2(out)))
+        out = nn.ReLU(inplace=True)(self.conv3(out))
+        out = self.conv4(out)
+        out = x + out
+
+
+        return out
+
+class TransitionBlock(nn.Module):
+    """TransitionBlock
+
+    """
+
+    #BasicBlock and BottleNeck block
+    #have different output size
+    #we use class attribute expansion
+    #to distinct
+    expansion = 1
+
+    def __init__(self, in_channels, out_channels, stride=1):
+        super().__init__()
+
+        self.conv1 =  nn.Conv2d(in_channels, 4*in_channels, kernel_size=1, stride=1, bias=False)
+        self.conv2 =  nn.Conv2d(in_channels, 2*in_channels, kernel_size=1, stride=1, bias=False)
+        self.upsample1 =  nn.Upsample(scale_factor=4, mode='bilinear')
+        self.upsample2 =  nn.Upsample(scale_factor=2, mode='bilinear')
+
+    def forward(self, C3, C4, C5):
+        C5 = self.upsample1(self.conv1(C5))
+        C4 = self.upsample2(self.conv2(C4))
+
+
+        return C3+C4+C5
+
 class ResNet(nn.Module):
 
     def __init__(self, block, num_block, num_classes=100):
