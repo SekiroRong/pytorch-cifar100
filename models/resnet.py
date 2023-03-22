@@ -86,15 +86,18 @@ class FocalBlock(nn.Module):
     #have different output size
     #we use class attribute expansion
     #to distinct
-    expansion = 4
+    expansion = 1
 
     def __init__(self, in_channels, out_channels, stride=1):
         super().__init__()
 
-        self.conv1 =  nn.Conv2d(in_channels, in_channels, kernel_size=7, stride=1, padding=7, group=in_channels, bias=False)
-        self.conv2 =  nn.Conv2d(in_channels, in_channels, kernel_size=7, stride=1, dilation=7, padding=7, group=in_channels, bias=False)
-        self.conv3 =  nn.Conv2d(in_channels, 4*in_channels, kernel_size=1, stride=1, bias=False)
-        self.conv3 =  nn.Conv2d(4*in_channels, in_channels, kernel_size=1, stride=1, bias=False)
+        self.conv1 =  nn.Conv2d(in_channels, out_channels, kernel_size=7, stride=1, padding=3, groups=out_channels, bias=False)
+        self.conv2 =  nn.Conv2d(out_channels, out_channels, kernel_size=7, stride=1, dilation=3, padding=9, groups=out_channels, bias=False)
+        self.conv3 =  nn.Conv2d(out_channels, 4*out_channels, kernel_size=1, stride=1, bias=False)
+        self.conv4 =  nn.Conv2d(4*out_channels, out_channels, kernel_size=1, stride=1, bias=False)
+
+        self.relu = nn.ReLU(inplace=True)
+        self.bn = nn.BatchNorm2d(out_channels)
 
         self.shortcut = nn.Sequential()
 
@@ -106,9 +109,10 @@ class FocalBlock(nn.Module):
 
 
     def forward(self, x):
-        out = x + nn.ReLU(inplace=True)(nn.BatchNorm2d(self.conv1(x)))
-        out = out + nn.ReLU(inplace=True)(nn.BatchNorm2d(self.conv2(out)))
-        out = nn.ReLU(inplace=True)(self.conv3(out))
+        out = self.conv1(x)
+        out = x + self.relu(self.bn(out))
+        out = out + self.relu(self.bn(self.conv2(out)))
+        out = self.relu(self.conv3(out))
         out = self.conv4(out)
         out = self.shortcut(x) + out
 
@@ -146,15 +150,19 @@ class CFNet_Stage(nn.Module):
     def __init__(self, in_channels, out_channels, stride=1):
         super().__init__()
 
-        self.block1 = BottleNeck(self.in_channels, out_channels, stride)
-        self.block2 = BottleNeck(self.in_channels, out_channels, 1)
-        self.block3 = FocalBlock(self.in_channels, out_channels, 1)
-        self.TransitionBlock = TransitionBlock(self.in_channels, out_channels, 1)
+        self.block1 = BasicBlock(in_channels, out_channels, stride)
+        self.block2 = BasicBlock(out_channels * BasicBlock.expansion, out_channels, 1)
+        self.block3 = FocalBlock(out_channels * BasicBlock.expansion, out_channels, 1)
+        self.TransitionBlock = TransitionBlock(out_channels * BottleNeck.expansion, out_channels, 1)
 
     def forward(self, x):
+        print(x.shape)
         C3 = self.block1(x)
+        print(C3.shape)
         C4 = self.block2(C3)
+        print(C4.shape)
         C5 = self.block3(C4)
+        print(C5.shape)
 
         return self.TransitionBlock(C3, C4, C5)
 
@@ -172,11 +180,11 @@ class CFNet(nn.Module):
         #we use a different inputsize than the original paper
         #so conv2_x's stride is 1
         self.conv2_x = CFNet_Stage(64, 64, 1)
-        self.conv3_x = CFNet_Stage(64, 128, 2)
-        self.conv4_x = CFNet_Stage(128, 256, 2)
-        self.conv5_x = CFNet_Stage(256, 512, 2)
+        self.conv3_x = CFNet_Stage(256, 128, 2)
+        self.conv4_x = CFNet_Stage(1024, 256, 2)
+        self.conv5_x = CFNet_Stage(2048, 512, 2)
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(512 * block.expansion, num_classes)
+        self.fc = nn.Linear(512 * BottleNeck.expansion, num_classes)
 
     def forward(self, x):
         output = self.conv1(x)
