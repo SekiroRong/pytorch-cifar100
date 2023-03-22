@@ -68,7 +68,7 @@ def train(epoch):
     for name, param in net.named_parameters():
         layer, attr = os.path.splitext(name)
         attr = attr[1:]
-        writer.add_histogram("{}/{}".format(layer, attr), param, epoch)
+        # writer.add_histogram("{}/{}".format(layer, attr), param, epoch)
 
     finish = time.time()
 
