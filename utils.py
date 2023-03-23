@@ -155,8 +155,8 @@ def get_network(args):
         from models.vit import ViT
         net = ViT()
     elif args.net == 'cfnet':
-        from models.resnet import CFNet
-        net = CFNet()
+        from models.resnet import cfnet50
+        net = cfnet50()
 
     else:
         print('the network name you have entered is not supported yet')
